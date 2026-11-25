@@ -118,8 +118,8 @@ th { background: #f3f6f9; }
 .chain li.no { border-color: var(--bad); background: var(--bad-bg); }
 .grip { flex: none; width: 24px; align-self: stretch; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; touch-action: none; cursor: grab; }
 .chain .txt { flex: 1 1 auto; min-width: 0; font-size: 1em; line-height: 1.35; }
-.moves { flex: none; display: flex; flex-direction: column; gap: 4px; }
-.moves button { width: 30px; height: 22px; padding: 0; border-radius: 6px; font-size: 0.7rem; line-height: 1; }
+.moves { flex: none; display: flex; flex-direction: row; gap: 4px; }
+.moves button { width: 30px; height: 28px; padding: 0; border-radius: 6px; font-size: 0.7rem; line-height: 1; }
 .chain-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .chain-actions button, #chainDemo { flex: 1 1 auto; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; }
 #chainDemo { border-color: var(--blue); color: var(--blue); font-weight: 600; }
@@ -741,7 +741,8 @@ body.chain-open .plot-box { display: none; }
     on: {
       steps: [
         'Der Elektromagnet wird eingeschaltet. Der Strom in ihm steigt an.',
-        'Das Magnetfeld in der Wagenspule wird stärker.',
+        'Das Magnetfeld des Elektromagneten wird stärker.',
+        'Dieses Magnetfeld reicht bis in die Wagenspule. Das Magnetfeld in der Wagenspule wird stärker.',
         'Weil sich das Magnetfeld ändert, wird in der Wagenspule eine Spannung induziert.',
         'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom.',
         'Das Magnetfeld des Induktionsstroms ist dem Feld des Elektromagneten entgegengerichtet.',
@@ -753,7 +754,8 @@ body.chain-open .plot-box { display: none; }
     off: {
       steps: [
         'Der Elektromagnet wird ausgeschaltet. Der Strom in ihm nimmt ab.',
-        'Das Magnetfeld in der Wagenspule wird schwächer.',
+        'Das Magnetfeld des Elektromagneten wird schwächer.',
+        'Dieses Magnetfeld reicht bis in die Wagenspule. Das Magnetfeld in der Wagenspule wird schwächer.',
         'Weil sich das Magnetfeld ändert, wird in der Wagenspule eine Spannung induziert.',
         'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom, jetzt in die andere Richtung.',
         'Das Magnetfeld des Induktionsstroms ist gleich gerichtet wie das Feld des Elektromagneten.',
@@ -770,7 +772,7 @@ body.chain-open .plot-box { display: none; }
     while (a.some((v, i) => v === i && i === 0) || a.every((v, i) => v === i));
     return a;
   };
-  const chainOrder = { on: shuffled(6), off: shuffled(6) };
+  const chainOrder = { on: shuffled(CHAINS.on.steps.length), off: shuffled(CHAINS.off.steps.length) };
   let chainKind = 'on';
   const chainList = $('chainList'), chainFb = $('chainFb'), chainBody = $('chainBody');
   function clearMarks() { for (const li of chainList.children) li.classList.remove('ok', 'no'); chainFb.hidden = true; }
@@ -842,9 +844,9 @@ body.chain-open .plot-box { display: none; }
       chainFb.textContent = right + ' von ' + items.length + ' Karten stehen an der richtigen Stelle. Frage dich bei den roten Karten: Was muss vorher passiert sein, damit dieser Schritt möglich ist?';
     }
   });
-  $('chainShuffle').addEventListener('click', () => { chainOrder[chainKind] = shuffled(6); renderChain(); });
+  $('chainShuffle').addEventListener('click', () => { chainOrder[chainKind] = shuffled(CHAINS[chainKind].steps.length); renderChain(); });
   $('chainSolve').addEventListener('click', () => {
-    chainOrder[chainKind] = [0, 1, 2, 3, 4, 5]; renderChain();
+    chainOrder[chainKind] = CHAINS[chainKind].steps.map((_, i) => i); renderChain();
     for (const li of chainList.children) li.classList.add('ok');
     chainFb.hidden = false; chainFb.className = 'fb ok'; chainFb.textContent = 'Lösung: ' + CHAINS[chainKind].end;
   });
