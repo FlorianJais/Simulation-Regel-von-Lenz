@@ -12,6 +12,7 @@ Vor einem Elektromagneten steht ein Wagen mit einer kurzgeschlossenen Spule. Bei
 - Stromkreis der Wagenspule schließen oder unterbrechen
 - Wagen mit Maus oder Finger verschieben, Ansicht drehen und zoomen
 - Einblenden: Feldlinien, Pole, B-Pfeile, Stromrichtung, Kraftpfeil, Diagramme I–t
+- Kausalkette zum Ein- und Ausschalten: Karten in die richtige Reihenfolge ziehen und prüfen
 
 ## Hinweise zum Modell
 

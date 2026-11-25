@@ -98,6 +98,41 @@ body.info-open .plot-box { left: calc(var(--gl) + var(--col) + 12px); bottom: va
 table { border-collapse: collapse; width: 100%; min-width: 360px; font-size: 0.86rem; }
 th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
 th { background: #f3f6f9; }
+.header .segmented { flex-wrap: wrap; }
+.header .segmented button { flex: 1 1 auto; padding: 8px 10px; }
+
+/* Kausalkette */
+.info-body .chain { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; }
+.chain li {
+  position: relative; display: flex; align-items: center; gap: 6px; background: #fff;
+  border: 2px solid var(--line); border-radius: 8px; padding: 8px 6px 8px 2px;
+  user-select: none; -webkit-user-select: none; cursor: grab; transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+.chain li + li::before {
+  content: "↓"; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  font-size: 17px; line-height: 20px; font-weight: 700; color: var(--muted);
+}
+.chain li:hover { border-color: var(--border); }
+.chain li.dragging { cursor: grabbing; border-color: var(--blue); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); z-index: 2; }
+.chain li.ok { border-color: var(--good); background: var(--good-bg); }
+.chain li.no { border-color: var(--bad); background: var(--bad-bg); }
+.grip { flex: none; width: 24px; align-self: stretch; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; touch-action: none; cursor: grab; }
+.chain .txt { flex: 1 1 auto; min-width: 0; font-size: 0.9rem; line-height: 1.4; }
+.moves { flex: none; display: flex; flex-direction: column; gap: 4px; }
+.moves button { width: 30px; height: 24px; padding: 0; border-radius: 6px; font-size: 0.7rem; line-height: 1; }
+.chain-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.chain-actions button, #chainDemo { flex: 1 1 auto; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; }
+#chainDemo { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+
+/* Skizzen im Hefteintrag */
+.sketch { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.sketch figcaption { font-size: 0.95rem; }
+.sketch svg { display: block; width: 100%; height: auto; }
+.sketch p { font-size: 0.9rem; }
+.legende { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: 0.85rem; color: var(--muted); }
+.legende span { display: inline-flex; align-items: center; gap: 6px; }
+.verweis { font-size: 0.88rem; color: var(--muted); }
+
 #loadErr { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); padding: 14px 18px; max-width: 320px; z-index: 5; }
 
 @media (min-width: 900px) {
@@ -128,6 +163,7 @@ th { background: #f3f6f9; }
     <p>Schalte den Elektromagneten ein und aus. Was passiert mit dem Wagen, auf dem eine Spule sitzt?</p>
     <div class="segmented">
       <button id="btnTasks" class="state" type="button" aria-pressed="false">Forscheraufträge</button>
+      <button id="btnChain" class="state" type="button" aria-pressed="false">Kausalkette</button>
       <button id="btnHeft" class="state" type="button" aria-pressed="false">Hefteintrag</button>
     </div>
   </div>
@@ -138,52 +174,49 @@ th { background: #f3f6f9; }
       <p>Führe jeden Auftrag in der Simulation durch und kreuze dann an, was du beobachtet hast.</p>
       <ol id="taskList"></ol>
     </div>
+    <div class="info-body" id="chainBody" hidden>
+      <p>Warum wird der Wagen bewegt? Bringe die Karten in die richtige Reihenfolge: Jeder Schritt ist die Ursache für den nächsten. Ziehe die Karten am Griff ⠿ oder verschiebe sie mit den Pfeilen.</p>
+      <div class="segmented" id="segChain" role="group" aria-label="Vorgang">
+        <button type="button" data-k="on" class="active">Einschalten</button><button type="button" data-k="off">Ausschalten</button>
+      </div>
+      <ol class="chain" id="chainList" aria-label="Kausalkette"></ol>
+      <div class="chain-actions">
+        <button id="chainCheck" type="button">Prüfen</button><button id="chainShuffle" type="button">Neu mischen</button><button id="chainSolve" type="button">Lösung zeigen</button>
+      </div>
+      <p class="fb" id="chainFb" hidden></p>
+      <button id="chainDemo" type="button">Einschalten im Versuch ansehen</button>
+    </div>
     <div class="info-body" id="heftBody" hidden>
       <div>
         <h3>Versuch</h3>
-        <p>Vor einem Elektromagneten steht ein leicht beweglicher Wagen mit einer kurzgeschlossenen Spule. Der Elektromagnet wird ein- und ausgeschaltet.</p>
+        <p>Vor einem Elektromagneten steht ein leicht beweglicher Wagen. Auf ihm sitzt eine Spule, deren Enden miteinander verbunden sind. Ihr Stromkreis ist also geschlossen. Der Elektromagnet wird ein- und ausgeschaltet.</p>
       </div>
+      <figure class="sketch">
+        <figcaption><b>Einschalten:</b> Der Wagen wird abgestoßen.</figcaption>
+        <div data-sketch="on"></div>
+        <p>Das Magnetfeld in der Spule wird <b>stärker</b>. Der Induktionsstrom macht die Spule zu einem Magneten, dessen Feld <b>entgegengesetzt</b> gerichtet ist. Nordpol steht Nordpol gegenüber.</p>
+      </figure>
+      <figure class="sketch">
+        <figcaption><b>Ausschalten:</b> Der Wagen wird angezogen.</figcaption>
+        <div data-sketch="off"></div>
+        <p>Das Magnetfeld in der Spule wird <b>schwächer</b>. Jetzt ist das Feld der Spule <b>gleich</b> gerichtet wie das des Elektromagneten. Südpol steht Nordpol gegenüber.</p>
+      </figure>
+      <p class="legende"><span><i class="farbe" style="background:var(--bmag)"></i>Feld des Elektromagneten</span><span><i class="farbe" style="background:var(--bind)"></i>Feld des Induktionsstroms</span></p>
+      <p>Bleibt der Strom im Elektromagneten gleich, ändert sich das Magnetfeld nicht. Dann fließt kein Induktionsstrom und der Wagen bleibt stehen. Ist der Stromkreis der Spule unterbrochen, bewegt er sich ebenfalls nicht.</p>
+      <p class="merk"><span>Merksatz · Regel von Lenz</span>Der Induktionsstrom ist stets so gerichtet, dass er der Ursache seiner Entstehung entgegenwirkt.</p>
       <div>
-        <h3>Beobachtung</h3>
+        <h3>Die Spule wehrt sich gegen jede Änderung</h3>
+        <p>Die Ursache des Induktionsstroms ist die <b>Änderung</b> des Magnetfelds in der Spule. Der Wagen bewegt sich immer so, dass diese Änderung kleiner ausfällt:</p>
         <ul>
-          <li>Beim Einschalten wird der Wagen abgestoßen, egal wie der Elektromagnet gepolt ist.</li>
-          <li>Beim Ausschalten wird der Wagen angezogen.</li>
-          <li>Ein Induktionsstrom fließt nur, solange sich der Strom im Elektromagneten ändert.</li>
-          <li>Ist der Stromkreis der Wagenspule unterbrochen, bleibt der Wagen stehen.</li>
+          <li>Das Feld wird stärker: Der Wagen <b>weicht aus</b>. Weiter weg vom Magneten ist das Feld schwächer.</li>
+          <li>Das Feld wird schwächer: Der Wagen <b>rückt nach</b>. Näher am Magneten ist das Feld stärker.</li>
         </ul>
       </div>
       <div>
-        <h3>Erklärung für das Einschalten</h3>
-        <ol>
-          <li>Der Strom im Elektromagneten steigt an. Das Magnetfeld, das die Wagenspule durchsetzt, wird stärker.</li>
-          <li>Weil sich das Magnetfeld in der Spule ändert, wird in ihr eine Spannung induziert. Da der Stromkreis geschlossen ist, fließt ein Induktionsstrom.</li>
-          <li>Der Induktionsstrom erzeugt ein eigenes Magnetfeld. Es ist dem anwachsenden Feld des Elektromagneten entgegengerichtet.</li>
-          <li>Dadurch stehen sich gleichnamige Pole gegenüber: Der Wagen wird abgestoßen.</li>
-        </ol>
+        <h3>Warum kann es nicht anders sein?</h3>
+        <p>Stell dir vor, der Wagen würde beim Einschalten angezogen. Dann käme er näher an den Magneten, das Feld in der Spule würde noch stärker, der Induktionsstrom noch größer und die Anziehung noch kräftiger. Der Wagen würde von selbst immer schneller, ohne dass jemand Energie hineinsteckt. Das widerspricht dem Energieerhaltungssatz. Die Regel von Lenz folgt also aus der Energieerhaltung.</p>
       </div>
-      <div>
-        <h3>Erklärung für das Ausschalten</h3>
-        <p>Das Magnetfeld in der Wagenspule wird schwächer. Der Induktionsstrom fließt jetzt anders herum. Sein Magnetfeld ist gleich gerichtet wie das abnehmende Feld des Elektromagneten. Es stehen sich ungleichnamige Pole gegenüber: Der Wagen wird angezogen.</p>
-      </div>
-      <div class="tbl">
-        <table>
-          <thead><tr><th>Vorgang</th><th>Magnetfeld in der Wagenspule</th><th>Magnetfeld des Induktionsstroms</th><th>Wirkung</th></tr></thead>
-          <tbody>
-            <tr><td>Einschalten</td><td>nimmt zu</td><td>entgegengesetzt zum Feld des Elektromagneten</td><td>Abstoßung</td></tr>
-            <tr><td>Ausschalten</td><td>nimmt ab</td><td>gleich gerichtet wie das Feld des Elektromagneten</td><td>Anziehung</td></tr>
-            <tr><td>Strom konstant</td><td>ändert sich nicht</td><td>keines, es fließt kein Induktionsstrom</td><td>keine Kraft</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="merk"><span>Merksatz · Regel von Lenz</span>Der Induktionsstrom ist stets so gerichtet, dass er der Ursache seiner Entstehung entgegenwirkt.</p>
-      <div>
-        <h3>Anwendung auf den Versuch</h3>
-        <p>Die Ursache ist die Änderung des Magnetfelds in der Spule. Beim Einschalten wirkt der Induktionsstrom der Zunahme entgegen, beim Ausschalten der Abnahme. In beiden Fällen bewegt sich der Wagen so, dass die Änderung kleiner ausfällt: weg vom stärker werdenden Feld, hin zum schwächer werdenden Feld.</p>
-      </div>
-      <div>
-        <h3>Begründung mit dem Energieerhaltungssatz</h3>
-        <p>Angenommen, der Induktionsstrom würde seine Ursache verstärken. Dann würde das Feld in der Spule noch schneller wachsen, der Induktionsstrom würde noch größer werden, und so weiter. Strom und Bewegungsenergie des Wagens würden von selbst immer weiter zunehmen, ohne dass dafür Energie zugeführt wird. Das widerspricht dem Energieerhaltungssatz. Die Regel von Lenz ist also eine Folge der Energieerhaltung.</p>
-      </div>
+      <p class="verweis">Die Begründung Schritt für Schritt kannst du unter „Kausalkette“ selbst zusammensetzen.</p>
     </div>
   </div>
 
@@ -634,18 +667,21 @@ th { background: #f3f6f9; }
     c.addEventListener('change', () => { show[checks[id]] = c.checked; syncUI(); });
   }
 
-  // Aufträge und Hefteintrag
+  // Aufträge, Kausalkette und Hefteintrag
   let openInfo = null;
+  const INFO = {
+    tasks: ['tasksBody', 'btnTasks', 'Forscheraufträge'],
+    chain: ['chainBody', 'btnChain', 'Kausalkette: Warum bewegt sich der Wagen?'],
+    heft: ['heftBody', 'btnHeft', 'Hefteintrag: Die Regel von Lenz']
+  };
   function setInfo(which) {
     openInfo = openInfo === which ? null : which;
     $('info').hidden = !openInfo; $('spacer').hidden = !!openInfo;
     document.body.classList.toggle('info-open', !!openInfo);
-    $('tasksBody').hidden = openInfo !== 'tasks'; $('heftBody').hidden = openInfo !== 'heft';
-    $('infoTitle').textContent = openInfo === 'heft' ? 'Hefteintrag: Die Regel von Lenz' : 'Forscheraufträge';
-    $('btnTasks').setAttribute('aria-pressed', String(openInfo === 'tasks')); $('btnHeft').setAttribute('aria-pressed', String(openInfo === 'heft'));
+    for (const k in INFO) { $(INFO[k][0]).hidden = openInfo !== k; $(INFO[k][1]).setAttribute('aria-pressed', String(openInfo === k)); }
+    if (openInfo) $('infoTitle').textContent = INFO[openInfo][2];
   }
-  $('btnTasks').addEventListener('click', () => setInfo('tasks'));
-  $('btnHeft').addEventListener('click', () => setInfo('heft'));
+  for (const k in INFO) $(INFO[k][1]).addEventListener('click', () => setInfo(k));
   $('btnClose').addEventListener('click', () => setInfo(openInfo));
 
   const away = 'Er rollt vom Elektromagneten weg.', toward = 'Er rollt zum Elektromagneten hin.', stay = 'Er bleibt stehen.';
@@ -678,6 +714,160 @@ th { background: #f3f6f9; }
     });
     li.append(opts, fb); $('taskList').appendChild(li);
   });
+
+  // ---------- Kausalkette ----------
+  const CHAINS = {
+    on: {
+      steps: [
+        'Der Elektromagnet wird eingeschaltet. Der Strom in seiner Spule steigt an.',
+        'Das Magnetfeld des Elektromagneten wird stärker, auch im Inneren der Wagenspule.',
+        'Weil sich das Magnetfeld in der Wagenspule ändert, wird in ihr eine Spannung induziert.',
+        'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom.',
+        'Der Induktionsstrom macht die Wagenspule zu einem Magneten. Sein Feld ist dem Feld des Elektromagneten entgegengerichtet.',
+        'Nordpol steht Nordpol gegenüber: Der Wagen wird abgestoßen.'
+      ],
+      end: 'Der Induktionsstrom wirkt seiner Ursache entgegen: Das Feld in der Spule soll nicht stärker werden, also weicht der Wagen aus.',
+      demo: 'Einschalten im Versuch ansehen'
+    },
+    off: {
+      steps: [
+        'Der Elektromagnet wird ausgeschaltet. Der Strom in seiner Spule nimmt ab.',
+        'Das Magnetfeld des Elektromagneten wird schwächer, auch im Inneren der Wagenspule.',
+        'Weil sich das Magnetfeld in der Wagenspule ändert, wird in ihr eine Spannung induziert.',
+        'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom, jetzt in die andere Richtung.',
+        'Die Wagenspule wird zu einem Magneten, dessen Feld gleich gerichtet ist wie das Feld des Elektromagneten.',
+        'Südpol steht Nordpol gegenüber: Der Wagen wird angezogen.'
+      ],
+      end: 'Der Induktionsstrom wirkt seiner Ursache entgegen: Das Feld in der Spule soll nicht schwächer werden, also rückt der Wagen nach.',
+      demo: 'Ausschalten im Versuch ansehen'
+    }
+  };
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const shuffled = n => {
+    let a;
+    do { a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
+    while (a.some((v, i) => v === i && i === 0) || a.every((v, i) => v === i));
+    return a;
+  };
+  const chainOrder = { on: shuffled(6), off: shuffled(6) };
+  let chainKind = 'on';
+  const chainList = $('chainList'), chainFb = $('chainFb'), chainBody = $('chainBody');
+  function clearMarks() { for (const li of chainList.children) li.classList.remove('ok', 'no'); chainFb.hidden = true; }
+  function readOrder() { chainOrder[chainKind] = [...chainList.children].map(li => +li.dataset.idx); }
+  function renderChain() {
+    chainList.textContent = '';
+    for (const idx of chainOrder[chainKind]) {
+      const li = document.createElement('li');
+      li.className = 'step'; li.dataset.idx = idx;
+      li.innerHTML = '<span class="grip" aria-hidden="true">⠿</span><span class="txt"></span>' +
+        '<span class="moves"><button type="button" class="up" aria-label="Karte nach oben">▲</button><button type="button" class="down" aria-label="Karte nach unten">▼</button></span>';
+      li.querySelector('.txt').textContent = CHAINS[chainKind].steps[idx];
+      chainList.appendChild(li);
+    }
+    for (const b of $('segChain').children) b.classList.toggle('active', b.dataset.k === chainKind);
+    $('chainDemo').textContent = CHAINS[chainKind].demo;
+    clearMarks();
+  }
+  // Nachbarkarte weich nachrücken lassen (die gezogene Karte selbst bleibt im DOM stehen)
+  function moveSmooth(el, fn) {
+    const t0 = el.offsetTop; fn();
+    const dy = t0 - el.offsetTop;
+    if (reduceMotion || !dy) return;
+    el.style.transition = 'none'; el.style.transform = 'translateY(' + dy + 'px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = 'transform .16s ease'; el.style.transform = ''; }));
+  }
+  let dragLi = null;
+  chainList.addEventListener('pointerdown', e => {
+    const li = e.target.closest('li.step');
+    if (!li || e.target.closest('button')) return;
+    if (e.pointerType !== 'mouse' && !e.target.closest('.grip')) return;
+    e.preventDefault(); dragLi = li; li.classList.add('dragging'); clearMarks();
+  });
+  window.addEventListener('pointermove', e => {
+    if (!dragLi) return;
+    const y = e.clientY - chainList.getBoundingClientRect().top;
+    const prev = dragLi.previousElementSibling, next = dragLi.nextElementSibling;
+    if (prev && y < prev.offsetTop + prev.offsetHeight / 2) moveSmooth(prev, () => chainList.insertBefore(prev, dragLi.nextElementSibling));
+    else if (next && y > next.offsetTop + next.offsetHeight / 2) moveSmooth(next, () => chainList.insertBefore(next, dragLi));
+    const r = chainBody.getBoundingClientRect();
+    if (e.clientY < r.top + 36) chainBody.scrollTop -= 10; else if (e.clientY > r.bottom - 36) chainBody.scrollTop += 10;
+  });
+  const dropLi = () => { if (!dragLi) return; dragLi.classList.remove('dragging'); dragLi = null; readOrder(); };
+  window.addEventListener('pointerup', dropLi); window.addEventListener('pointercancel', dropLi);
+  chainList.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const li = b.closest('li'), prev = li.previousElementSibling, next = li.nextElementSibling;
+    if (b.classList.contains('up') && prev) moveSmooth(prev, () => chainList.insertBefore(prev, li.nextElementSibling));
+    if (b.classList.contains('down') && next) moveSmooth(next, () => chainList.insertBefore(next, li));
+    readOrder(); clearMarks();
+  });
+  $('segChain').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; chainKind = b.dataset.k; renderChain(); });
+  $('chainCheck').addEventListener('click', () => {
+    const items = [...chainList.children]; let right = 0;
+    items.forEach((li, i) => { const ok = +li.dataset.idx === i; li.classList.toggle('ok', ok); li.classList.toggle('no', !ok); if (ok) right++; });
+    chainFb.hidden = false;
+    if (right === items.length) { chainFb.className = 'fb ok'; chainFb.textContent = 'Richtig! ' + CHAINS[chainKind].end; }
+    else {
+      chainFb.className = 'fb no';
+      chainFb.textContent = right + ' von ' + items.length + ' Karten stehen an der richtigen Stelle. Frage dich bei den roten Karten: Was muss vorher passiert sein, damit dieser Schritt möglich ist?';
+    }
+  });
+  $('chainShuffle').addEventListener('click', () => { chainOrder[chainKind] = shuffled(6); renderChain(); });
+  $('chainSolve').addEventListener('click', () => {
+    chainOrder[chainKind] = [0, 1, 2, 3, 4, 5]; renderChain();
+    for (const li of chainList.children) li.classList.add('ok');
+    chainFb.hidden = false; chainFb.className = 'fb ok'; chainFb.textContent = 'Lösung: ' + CHAINS[chainKind].end;
+  });
+  let demoTimer = 0;
+  $('chainDemo').addEventListener('click', () => {
+    const kind = chainKind;
+    for (const id of ['chkPoles', 'chkB', 'chkF']) { $(id).checked = true; show[checks[id]] = true; }
+    S.drag = false; S.d = P.DSTART; S.v = 0; S.I2 = 0; S.I0 = pendingI0;
+    if (kind === 'on') { S.on = false; S.I1 = 0; } else { S.on = true; S.I1 = S.pol * S.I0; }
+    syncUI();
+    if (window.innerWidth <= 700 && openInfo) setInfo(openInfo);
+    clearTimeout(demoTimer);
+    demoTimer = setTimeout(() => { S.on = kind === 'on'; syncUI(); }, 700);
+  });
+  renderChain();
+
+  // ---------- Skizzen im Hefteintrag ----------
+  function sketchSVG(kind) {
+    const on = kind === 'on', N = '#c8322f', Sg = '#1f8a4c', B = '#2f6fd0', BI = '#b0309a', INK = '#1d2733', MUT = '#4a5866';
+    const arrow = (x1, y, x2, c, w) => {
+      const d = Math.sign(x2 - x1), h = 9;
+      return '<line x1="' + x1 + '" y1="' + y + '" x2="' + (x2 - d * h * 0.8) + '" y2="' + y + '" stroke="' + c + '" stroke-width="' + w + '" stroke-linecap="round"/>' +
+        '<polygon points="' + x2 + ',' + y + ' ' + (x2 - d * h) + ',' + (y - 5.5) + ' ' + (x2 - d * h) + ',' + (y + 5.5) + '" fill="' + c + '"/>';
+    };
+    const cap = (x, w, y, h, north) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="2" fill="' + (north ? N : Sg) + '"/>' +
+      '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + (north ? 'N' : 'S') + '</text>';
+    let w = '';
+    for (let x = 34; x <= 108; x += 7) w += '<line x1="' + x + '" y1="40" x2="' + (x - 3) + '" y2="100" stroke="#8a4a1c" stroke-opacity=".55"/>';
+    let w2 = '';
+    for (let x = 204; x <= 250; x += 7) w2 += '<line x1="' + x + '" y1="40" x2="' + (x - 3) + '" y2="100" stroke="#8a4a1c" stroke-opacity=".35"/>';
+    return '<svg viewBox="0 0 320 146" role="img" aria-label="' + (on
+      ? 'Einschalten: Feld des Elektromagneten nach rechts, Feld des Induktionsstroms nach links, Nordpol gegenüber Nordpol, Kraft vom Magneten weg'
+      : 'Ausschalten: beide Felder nach rechts, Südpol der Spule gegenüber dem Nordpol des Magneten, Kraft zum Magneten hin') + '" font-family="system-ui, Segoe UI, sans-serif">' +
+      // Elektromagnet
+      '<rect x="8" y="58" width="124" height="24" rx="2" fill="#8b95a1"/>' +
+      '<rect x="26" y="38" width="88" height="64" rx="5" fill="#d98a4e" stroke="#8a4a1c"/>' + w +
+      cap(8, 18, 58, 24, false) + cap(114, 18, 58, 24, true) +
+      '<text x="70" y="26" text-anchor="middle" font-size="12" fill="' + MUT + '">' + (on ? 'Strom steigt' : 'Strom sinkt') + '</text>' +
+      '<text x="70" y="122" text-anchor="middle" font-size="11" fill="' + MUT + '">Elektromagnet</text>' +
+      // Wagen mit Spule
+      '<rect x="176" y="106" width="100" height="9" rx="2" fill="#5d6772"/>' +
+      '<circle cx="192" cy="121" r="7" fill="' + INK + '"/><circle cx="260" cy="121" r="7" fill="' + INK + '"/>' +
+      '<rect x="196" y="38" width="60" height="64" rx="4" fill="#efc9a6" stroke="#8a4a1c"/>' + w2 +
+      cap(184, 12, 38, 64, on) + cap(256, 12, 38, 64, !on) +
+      arrow(204, 58, 250, B, 4) +
+      (on ? arrow(250, 82, 204, BI, 4) : arrow(204, 82, 250, BI, 4)) +
+      '<text x="226" y="142" text-anchor="middle" font-size="11" fill="' + MUT + '">Wagen mit Spule</text>' +
+      // Kraft
+      (on ? arrow(226, 18, 300, INK, 3.5) : arrow(226, 18, 152, INK, 3.5)) +
+      '<text x="' + (on ? 268 : 184) + '" y="12" text-anchor="middle" font-size="14" font-style="italic" font-weight="700" fill="' + INK + '">F</text>' +
+      '</svg>';
+  }
+  for (const el of document.querySelectorAll('[data-sketch]')) el.innerHTML = sketchSVG(el.dataset.sketch);
 
   syncUI(); updateReadouts();
   requestAnimationFrame(frame);
