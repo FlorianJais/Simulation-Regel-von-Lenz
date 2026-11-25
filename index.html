@@ -102,27 +102,44 @@ th { background: #f3f6f9; }
 .header .segmented button { flex: 1 1 auto; padding: 8px 10px; }
 
 /* Kausalkette */
-.info-body .chain { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; }
+.info-body .chain { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; font-size: 0.95rem; }
 .chain li {
   position: relative; display: flex; align-items: center; gap: 6px; background: #fff;
-  border: 2px solid var(--line); border-radius: 8px; padding: 8px 6px 8px 2px;
+  border: 2px solid var(--line); border-radius: 8px; padding: 5px 6px 5px 2px;
   user-select: none; -webkit-user-select: none; cursor: grab; transition: border-color .15s, background-color .15s, box-shadow .15s;
 }
 .chain li + li::before {
-  content: "↓"; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
-  font-size: 17px; line-height: 20px; font-weight: 700; color: var(--muted);
+  content: "↓"; position: absolute; top: -19px; left: 50%; transform: translateX(-50%);
+  font-size: 15px; line-height: 17px; font-weight: 700; color: var(--muted);
 }
 .chain li:hover { border-color: var(--border); }
 .chain li.dragging { cursor: grabbing; border-color: var(--blue); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); z-index: 2; }
 .chain li.ok { border-color: var(--good); background: var(--good-bg); }
 .chain li.no { border-color: var(--bad); background: var(--bad-bg); }
 .grip { flex: none; width: 24px; align-self: stretch; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; touch-action: none; cursor: grab; }
-.chain .txt { flex: 1 1 auto; min-width: 0; font-size: 0.9rem; line-height: 1.4; }
+.chain .txt { flex: 1 1 auto; min-width: 0; font-size: 1em; line-height: 1.35; }
 .moves { flex: none; display: flex; flex-direction: column; gap: 4px; }
-.moves button { width: 30px; height: 24px; padding: 0; border-radius: 6px; font-size: 0.7rem; line-height: 1; }
+.moves button { width: 30px; height: 22px; padding: 0; border-radius: 6px; font-size: 0.7rem; line-height: 1; }
 .chain-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .chain-actions button, #chainDemo { flex: 1 1 auto; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; }
 #chainDemo { border-color: var(--blue); color: var(--blue); font-weight: 600; }
+
+/* Kausalkette als breite Fläche über der Szene: links Anleitung und Knöpfe, rechts alle Karten auf einen Blick */
+body.chain-open .info {
+  position: fixed; left: var(--gl); top: var(--gt); bottom: var(--gb);
+  right: calc(280px + var(--gr) + 12px); max-width: 1000px; z-index: 4; background: #fff;
+}
+body.chain-open .plot-box { display: none; }
+#chainBody:not([hidden]) { display: grid; grid-template-columns: minmax(180px, 230px) minmax(0, 1fr); gap: 14px 22px; align-items: start; overflow-y: auto; }
+.chain-side { display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; }
+.chain-side .segmented button { font-size: 0.9rem; }
+.chain-side .chain-actions { flex-direction: column; }
+@media (max-width: 700px) {
+  body.chain-open .info { left: 8px; right: 8px; top: calc(8px + env(safe-area-inset-top, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); max-width: none; z-index: 10; }
+  #chainBody:not([hidden]) { grid-template-columns: minmax(0, 1fr); }
+  body.info-open .panel { display: none; }
+  .chain-side .chain-actions { flex-direction: row; }
+}
 
 /* Skizzen im Hefteintrag */
 .sketch { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -175,16 +192,18 @@ th { background: #f3f6f9; }
       <ol id="taskList"></ol>
     </div>
     <div class="info-body" id="chainBody" hidden>
-      <p>Warum wird der Wagen bewegt? Bringe die Karten in die richtige Reihenfolge: Jeder Schritt ist die Ursache für den nächsten. Ziehe die Karten am Griff ⠿ oder verschiebe sie mit den Pfeilen.</p>
-      <div class="segmented" id="segChain" role="group" aria-label="Vorgang">
-        <button type="button" data-k="on" class="active">Einschalten</button><button type="button" data-k="off">Ausschalten</button>
+      <div class="chain-side">
+        <p>Bringe die Karten in die richtige Reihenfolge. Jede Karte ist die Ursache für die nächste. Ziehe die Karten oder nutze die Pfeile ▲▼.</p>
+        <div class="segmented" id="segChain" role="group" aria-label="Vorgang">
+          <button type="button" data-k="on" class="active">Einschalten</button><button type="button" data-k="off">Ausschalten</button>
+        </div>
+        <div class="chain-actions">
+          <button id="chainCheck" type="button">Prüfen</button><button id="chainShuffle" type="button">Neu mischen</button><button id="chainSolve" type="button">Lösung zeigen</button>
+        </div>
+        <p class="fb" id="chainFb" hidden></p>
+        <button id="chainDemo" type="button">Einschalten im Versuch ansehen</button>
       </div>
       <ol class="chain" id="chainList" aria-label="Kausalkette"></ol>
-      <div class="chain-actions">
-        <button id="chainCheck" type="button">Prüfen</button><button id="chainShuffle" type="button">Neu mischen</button><button id="chainSolve" type="button">Lösung zeigen</button>
-      </div>
-      <p class="fb" id="chainFb" hidden></p>
-      <button id="chainDemo" type="button">Einschalten im Versuch ansehen</button>
     </div>
     <div class="info-body" id="heftBody" hidden>
       <div>
@@ -680,6 +699,8 @@ th { background: #f3f6f9; }
     document.body.classList.toggle('info-open', !!openInfo);
     for (const k in INFO) { $(INFO[k][0]).hidden = openInfo !== k; $(INFO[k][1]).setAttribute('aria-pressed', String(openInfo === k)); }
     if (openInfo) $('infoTitle').textContent = INFO[openInfo][2];
+    document.body.classList.toggle('chain-open', openInfo === 'chain');
+    if (openInfo === 'chain') fitChain();
   }
   for (const k in INFO) $(INFO[k][1]).addEventListener('click', () => setInfo(k));
   $('btnClose').addEventListener('click', () => setInfo(openInfo));
@@ -719,11 +740,11 @@ th { background: #f3f6f9; }
   const CHAINS = {
     on: {
       steps: [
-        'Der Elektromagnet wird eingeschaltet. Der Strom in seiner Spule steigt an.',
-        'Das Magnetfeld des Elektromagneten wird stärker, auch im Inneren der Wagenspule.',
-        'Weil sich das Magnetfeld in der Wagenspule ändert, wird in ihr eine Spannung induziert.',
+        'Der Elektromagnet wird eingeschaltet. Der Strom in ihm steigt an.',
+        'Das Magnetfeld in der Wagenspule wird stärker.',
+        'Weil sich das Magnetfeld ändert, wird in der Wagenspule eine Spannung induziert.',
         'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom.',
-        'Der Induktionsstrom macht die Wagenspule zu einem Magneten. Sein Feld ist dem Feld des Elektromagneten entgegengerichtet.',
+        'Das Magnetfeld des Induktionsstroms ist dem Feld des Elektromagneten entgegengerichtet.',
         'Nordpol steht Nordpol gegenüber: Der Wagen wird abgestoßen.'
       ],
       end: 'Der Induktionsstrom wirkt seiner Ursache entgegen: Das Feld in der Spule soll nicht stärker werden, also weicht der Wagen aus.',
@@ -731,11 +752,11 @@ th { background: #f3f6f9; }
     },
     off: {
       steps: [
-        'Der Elektromagnet wird ausgeschaltet. Der Strom in seiner Spule nimmt ab.',
-        'Das Magnetfeld des Elektromagneten wird schwächer, auch im Inneren der Wagenspule.',
-        'Weil sich das Magnetfeld in der Wagenspule ändert, wird in ihr eine Spannung induziert.',
+        'Der Elektromagnet wird ausgeschaltet. Der Strom in ihm nimmt ab.',
+        'Das Magnetfeld in der Wagenspule wird schwächer.',
+        'Weil sich das Magnetfeld ändert, wird in der Wagenspule eine Spannung induziert.',
         'Der Stromkreis der Wagenspule ist geschlossen. Es fließt ein Induktionsstrom, jetzt in die andere Richtung.',
-        'Die Wagenspule wird zu einem Magneten, dessen Feld gleich gerichtet ist wie das Feld des Elektromagneten.',
+        'Das Magnetfeld des Induktionsstroms ist gleich gerichtet wie das Feld des Elektromagneten.',
         'Südpol steht Nordpol gegenüber: Der Wagen wird angezogen.'
       ],
       end: 'Der Induktionsstrom wirkt seiner Ursache entgegen: Das Feld in der Spule soll nicht schwächer werden, also rückt der Wagen nach.',
@@ -766,8 +787,17 @@ th { background: #f3f6f9; }
     }
     for (const b of $('segChain').children) b.classList.toggle('active', b.dataset.k === chainKind);
     $('chainDemo').textContent = CHAINS[chainKind].demo;
-    clearMarks();
+    clearMarks(); fitChain();
   }
+  // Schrift der Karten so wählen, dass alle Karten ohne Scrollen zu sehen sind
+  function fitChain() {
+    if (chainBody.hidden) return;
+    let size = 1.0;
+    chainList.style.fontSize = size + 'rem';
+    while (chainBody.scrollHeight > chainBody.clientHeight + 1 && size > 0.74) { size -= 0.04; chainList.style.fontSize = size.toFixed(2) + 'rem'; }
+  }
+  new ResizeObserver(() => fitChain()).observe(chainBody);
+  new ResizeObserver(() => fitChain()).observe(document.querySelector('.chain-side'));
   // Nachbarkarte weich nachrücken lassen (die gezogene Karte selbst bleibt im DOM stehen)
   function moveSmooth(el, fn) {
     const t0 = el.offsetTop; fn();
@@ -825,7 +855,7 @@ th { background: #f3f6f9; }
     S.drag = false; S.d = P.DSTART; S.v = 0; S.I2 = 0; S.I0 = pendingI0;
     if (kind === 'on') { S.on = false; S.I1 = 0; } else { S.on = true; S.I1 = S.pol * S.I0; }
     syncUI();
-    if (window.innerWidth <= 700 && openInfo) setInfo(openInfo);
+    if (openInfo) setInfo(openInfo);
     clearTimeout(demoTimer);
     demoTimer = setTimeout(() => { S.on = kind === 'on'; syncUI(); }, 700);
   });
